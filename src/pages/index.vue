@@ -204,7 +204,7 @@ const downloadPng = () => {
             // 6. ダウンロード用のリンクを作成してクリック
             const link = document.createElement('a')
             link.href = pngUrl
-            link.download = `fol-${Date.now()}.svg` // ファイル名
+            link.download = `fol-${Date.now()}.png` // ファイル名
             document.body.appendChild(link)
             link.click()
             // 7. 後片付け
