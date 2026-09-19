@@ -204,7 +204,7 @@ const downloadPng = () => {
             // 6. ダウンロード用のリンクを作成してクリック
             const link = document.createElement('a')
             link.href = pngUrl
-            link.download = `sierpinski-carpet-${Date.now()}.png`
+            link.download = `fol-${Date.now()}.svg` // ファイル名
             document.body.appendChild(link)
             link.click()
             // 7. 後片付け
