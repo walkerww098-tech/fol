@@ -7,14 +7,10 @@
                         画像
                     </v-card-title>
                     <v-divider class="mb-4"></v-divider>
-                    <div class="d-flex justify-center align-center fill-height mt-4" style="background-color: lightgray;">
+                    <div class="d-flex justify-center align-center fill-height mt-4"
+                        style="background-color: lightgray;">
                         <svg ref="svgRef" :width="svgsize" :height="svgsize" :viewBox="viewBox">
-                            <rect :x="svgsize/-2" :y="svgsize/-2" :width="svgsize" :height="svgsize" fill="white" />
-                    <!--
-                    svgsize
-                        <svg ref="svgRef" width="500" height="500" viewBox="-250 -250 500 500">
-                            <rect x="-250" y="-250" width="500" height="500" fill="white" />
-                            -->
+                            <rect :x="svgsize / -2" :y="svgsize / -2" :width="svgsize" :height="svgsize" fill="white" />
                             <template v-for="p in circles">
                                 <circle :cx="p.cx" :cy="p.cy" :r="p.r" stroke="black" :stroke-width="lwidth"
                                     fill="none" />
@@ -51,7 +47,17 @@
                     <div class="text-caption mb-1">傾き : {{ angle.toFixed(0) }}</div>
                     <v-slider v-model="angle" :min="0" :max="60" step="5" thumb-label color="primary"
                         @update:modelValue="onclick" />
-                    <button @click="download">ダウンロード</button>
+                    <v-row style="font-size: medium;">
+                        <v-col cols="6">
+                            ダウンロード
+                        </v-col>
+                        <v-col cols="3">
+                            <v-btn @click="downloadSvg" color="primary" block>SVG</v-btn>
+                        </v-col>
+                        <v-col cols="3">
+                            <v-btn @click="downloadPng" color="primary" block>PNG</v-btn>
+                        </v-col>
+                    </v-row>
                 </v-card>
             </v-col>
         </v-row>
@@ -67,7 +73,7 @@ const app = useApplicationStore();
 const svgsize = ref(500);
 const viewBox = computed(() => {
     return "-" + svgsize.value / 2 + " -" + svgsize.value / 2 +
-           " " + svgsize.value + " " + svgsize.value;
+        " " + svgsize.value + " " + svgsize.value;
 });
 const layer = ref(2);                                       // レイヤ数
 const r = ref(58.0);                                        // 各円のR
@@ -142,7 +148,7 @@ const draw = (): [Circle[], string[]] => {
     return [list, arcs];
 }
 
-const download = () => {
+const downloadSvg = () => {
     if (!svgRef.value)
         return
     // 1. SVGのDOMを文字列（XML）に変換
@@ -164,5 +170,55 @@ const download = () => {
     // 5. 後片付け（メモリ解放と要素削除）
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
+}
+
+const downloadPng = () => {
+    if (!svgRef.value)
+        return
+    // 1. SVGのDOMを文字列（XML）に変換
+    const serializer = new XMLSerializer()
+    let svgString = serializer.serializeToString(svgRef.value)
+    // 名前の空間の修正（既存のコードの修正：正しいURLに変更）
+    if (!svgString.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+        svgString = svgString.replace(/^<svg/, '<svg xmlns="http://w3.org"');
+    }
+    // 2. SVGのサイズを取得（Canvasのサイズ合わせ用）
+    const width = svgsize.value;
+    const height = svgsize.value;
+    // 3. BlobおよびURLを作成
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+    const svgUrl = URL.createObjectURL(blob)
+    // 4. Imageオブジェクトを使ってCanvasに描画
+    const img = new Image()
+    img.onload = () => {
+        // 仮想Canvasの作成
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+            // 背景を透明（または白）にしてSVGを描画
+            ctx.drawImage(img, 0, 0, width, height)
+            // 5. CanvasからPNGのData URLを生成
+            const pngUrl = canvas.toDataURL('image/png')
+            // 6. ダウンロード用のリンクを作成してクリック
+            const link = document.createElement('a')
+            link.href = pngUrl
+            link.download = `sierpinski-carpet-${Date.now()}.png`
+            document.body.appendChild(link)
+            link.click()
+            // 7. 後片付け
+            document.body.removeChild(link)
+        }
+        URL.revokeObjectURL(svgUrl)
+    }
+
+    img.onerror = () => {
+        console.error('画像の読み込みに失敗しました。')
+        URL.revokeObjectURL(svgUrl)
+    }
+
+    // Imageの読み込みを開始
+    img.src = svgUrl
 }
 </script>
